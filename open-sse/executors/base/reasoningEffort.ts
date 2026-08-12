@@ -148,7 +148,8 @@ export function supportsMaxEffortForProvider(provider: string, model: string): b
   // upstream. Scoped to opencode-go deliberately: OpenRouter's DeepSeek path
   // (pi#4055) is the documented inverse and expects xhigh, not max.
   // Ollama Cloud also accepts literal max (for example GLM 5.2 supports
-  // low|medium|high|max|none) and rejects xhigh.
+  // low|medium|high|max|none) and rejects xhigh; xhigh is mapped to max by the
+  // provider guard in sanitizeReasoningEffortForProvider.
   const isOpencodeGoDeepSeek =
     provider === "opencode-go" && model.toLowerCase().includes("deepseek");
   const isOllamaCloud = provider === "ollama-cloud";
@@ -265,6 +266,18 @@ export function sanitizeReasoningEffortForProvider(
       `${provider}/${modelStr}: removed unsupported reasoning_effort`
     );
     return stripEffortValue(b, c);
+  }
+
+  // Ollama Cloud accepts low|medium|high|max|none and rejects xhigh. Map
+  // xhigh → max (its literal top tier) before the generic xhigh handling so
+  // passthrough (unregistered) models are covered too — the registry opt-out
+  // only covers known models.
+  if (provider === "ollama-cloud" && effortStr === "xhigh") {
+    log?.info?.(
+      "REASONING_SANITIZE",
+      `${provider}/${modelStr}: mapped reasoning_effort xhigh → max`
+    );
+    return writeEffortValue(b, "max", c);
   }
 
   // Native DeepSeek (api.deepseek.com) — V4 thinking mode accepts reasoning_effort
