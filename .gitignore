@@ -203,6 +203,9 @@ scripts/i18n/_pending-keys.json
 .claude/worktrees/
 .codegraph/
 
+# Test executable shims belong in the OS temporary directory, not the repository root
+/.fakebin-*/
+
 # Fumadocs generated source
 .source/
 
